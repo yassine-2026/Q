@@ -1,3 +1,5 @@
+const API_BASE = 'https://bayhon.onrender.com';
+
 document.addEventListener('DOMContentLoaded', () => {
     const fetchBtn = document.getElementById('fetchBtn');
     const videoUrlInput = document.getElementById('videoUrl');
@@ -36,7 +38,7 @@ document.addEventListener('DOMContentLoaded', () => {
         fetchBtn.disabled = true;
 
         try {
-            const response = await fetch('/api/info', {
+            const response = await fetch(`${API_BASE}/api/info`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
