@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>تحميل الفيديوهات الشامل</title>
     <link rel="stylesheet" href="/src/style.css">
+    <style>
+        .error-msg { display: none; }
+    </style>
 </head>
 <body>
     <div class="container">
@@ -14,35 +17,22 @@
         </header>
 
         <main>
-            <div class="input-group">
-                <input type="text" id="videoUrl" placeholder="الصق رابط الفيديو هنا...">
-                <button id="fetchBtn">استخراج</button>
-            </div>
-
-            <div class="cookie-group">
-                <label for="cookieFile" class="cookie-label">
-                    <span>(اختياري) رفع ملف cookies.txt للمنصات التي تتطلب تسجيل الدخول:</span>
-                    <input type="file" id="cookieFile" accept=".txt">
-                </label>
-            </div>
-
-            <div id="loading" class="hidden">
-                <div class="spinner"></div>
-                <p>جاري استخراج معلومات الفيديو...</p>
-            </div>
-
-            <div id="error" class="error-msg hidden"></div>
-
-            <div id="result" class="result-container hidden">
-                <div class="video-info">
-                    <img id="videoThumb" src="" alt="Thumbnail" class="thumbnail hidden">
-                    <h2 id="videoTitle"></h2>
-                    <p id="videoUploader" class="uploader"></p>
+            <form id="download-form">
+                <div class="input-group">
+                    <input type="url" id="url-input" placeholder="الصق رابط الفيديو هنا..." required>
+                    <button type="submit" id="fetchBtn">استخراج</button>
                 </div>
-                
-                <h3>اختر صيغة التحميل:</h3>
-                <div id="formatsList" class="formats-list"></div>
-            </div>
+
+                <div class="cookie-group">
+                    <label for="cookies-file" class="cookie-label">
+                        <span>(اختياري) رفع ملف cookies.txt للمنصات التي تتطلب تسجيل الدخول:</span>
+                        <input type="file" id="cookies-file" accept=".txt">
+                    </label>
+                </div>
+            </form>
+
+            <div id="error" class="error-msg"></div>
+            <div id="result" class="result-container" style="display:none;"></div>
         </main>
 
         <footer>
