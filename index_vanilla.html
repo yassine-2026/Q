@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>المُحمّل العالمي</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Tajawal', sans-serif; }
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top: 4px solid #fff;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body class="min-h-screen bg-[#0a0a0a] text-gray-100 flex flex-col items-center py-16 px-4">
+    <div class="w-full max-w-3xl flex flex-col items-center space-y-12">
+        <!-- Header -->
+        <div class="text-center space-y-4">
+            <div class="inline-flex items-center justify-center p-4 bg-indigo-500/10 rounded-2xl mb-4 text-indigo-400">
+                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+            </div>
+            <h1 class="text-4xl md:text-5xl font-bold tracking-tight text-white">المُحمّل العالمي</h1>
+            <p class="text-lg text-gray-400 max-w-xl mx-auto leading-relaxed">
+                قم بتحميل أي فيديو من أكثر من 1800 منصة حول العالم بأعلى جودة ممكنة.
+            </p>
+        </div>
+
+        <!-- Main Card -->
+        <div class="w-full bg-[#111111] border border-gray-800 rounded-3xl p-6 md:p-8 shadow-2xl">
+            <form id="downloadForm" class="space-y-6">
+                <div class="relative">
+                    <div class="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none text-gray-500">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                    </div>
+                    <input type="url" id="videoUrl" placeholder="أدخل رابط الفيديو هنا (مثال: يوتيوب، تيك توك، انستغرام...)" required class="w-full bg-[#1a1a1a] border border-gray-700 text-white text-lg rounded-2xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent block pr-12 pl-4 py-5 placeholder-gray-500">
+                </div>
+                <button type="submit" id="submitBtn" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-lg py-5 px-8 rounded-2xl transition-all flex items-center justify-center shadow-lg shadow-indigo-500/20">
+                    <span id="btnText">استخراج روابط التحميل</span>
+                    <div id="btnSpinner" class="spinner hidden mr-3"></div>
+                </button>
+            </form>
+
+            <!-- Error Message -->
+            <div id="errorBox" class="hidden mt-6 p-4 bg-red-500/10 border border-red-500/20 rounded-xl flex items-start text-red-400">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ml-3 shrink-0"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                <p id="errorText" class="text-sm font-medium leading-relaxed"></p>
+            </div>
+
+            <!-- Result Box -->
+            <div id="resultBox" class="hidden mt-8 space-y-6">
+                <div class="flex flex-col md:flex-row gap-6 bg-[#1a1a1a] p-4 rounded-2xl border border-gray-800">
+                    <div class="relative w-full md:w-64 shrink-0 rounded-xl overflow-hidden bg-black aspect-video" id="thumbnailContainer">
+                        <img id="thumbnailImg" src="" alt="Thumbnail" class="w-full h-full object-cover">
+                    </div>
+                    <div class="flex-1 min-w-0 flex flex-col justify-center">
+                        <h2 id="videoTitle" class="text-xl font-bold text-white mb-2 line-clamp-2 leading-snug"></h2>
+                        <p id="videoUploader" class="text-gray-400 text-sm flex items-center mb-6 hidden">
+                            بواسطة: <span id="uploaderName" class="mr-1 text-gray-300 font-medium"></span>
+                        </p>
+                        <div id="formatsList" class="flex flex-col gap-3 mt-auto"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="text-center">
+            <div class="inline-block px-6 py-3 bg-[#111111] border border-gray-800 rounded-full">
+                <p class="text-sm text-gray-500 flex items-center justify-center">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500 ml-3 animate-pulse"></span>
+                    يدعم أكثر من 1800 موقع، منها يوتيوب، تيك توك، فيسبوك، إنستغرام، وغيرها.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const form = document.getElementById('downloadForm');
+        const urlInput = document.getElementById('videoUrl');
+        const submitBtn = document.getElementById('submitBtn');
+        const btnText = document.getElementById('btnText');
+        const btnSpinner = document.getElementById('btnSpinner');
+        const errorBox = document.getElementById('errorBox');
+        const errorText = document.getElementById('errorText');
+        const resultBox = document.getElementById('resultBox');
+        
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const url = urlInput.value.trim();
+            if(!url) return;
+
+            // Reset UI
+            errorBox.classList.add('hidden');
+            resultBox.classList.add('hidden');
+            submitBtn.disabled = true;
+            submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            btnText.textContent = 'جارٍ استخراج الروابط من المنصات...';
+            btnSpinner.classList.remove('hidden');
+
+            try {
+                // ملاحظة: تأكد من تشغيل الخادم على هذا الرابط (افتراضي في app_python.py هو localhost:5000)
+                const response = await fetch('http://localhost:5000/api/download', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url })
+                });
+                
+                const data = await response.json();
+
+                if(!data.success) {
+                    throw new Error(data.error || 'فشل الاتصال.');
+                }
+
+                // Render Success
+                document.getElementById('videoTitle').textContent = data.title || 'فيديو بدون عنوان';
+                
+                if(data.thumbnail) {
+                    document.getElementById('thumbnailImg').src = data.thumbnail;
+                    document.getElementById('thumbnailContainer').style.display = 'block';
+                } else {
+                    document.getElementById('thumbnailContainer').style.display = 'none';
+                }
+
+                if(data.uploader) {
+                    document.getElementById('uploaderName').textContent = data.uploader;
+                    document.getElementById('videoUploader').classList.remove('hidden');
+                }
+
+                const formatsList = document.getElementById('formatsList');
+                formatsList.innerHTML = '';
+                
+                data.formats.forEach(f => {
+                    const iconSvg = f.type.includes('audio') && !f.type.includes('video') 
+                        ? `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-indigo-400 ml-3"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>`
+                        : `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-emerald-400 ml-3"><path d="m22 8-6 4 6 4V8Z"/><rect width="14" height="12" x="2" y="6" rx="2" ry="2"/></svg>`;
+
+                    formatsList.innerHTML += `
+                        <a href="${f.url}" target="_blank" class="flex items-center justify-between bg-gray-800 hover:bg-gray-700 transition-colors rounded-xl p-4 group">
+                            <div class="flex items-center">
+                                ${iconSvg}
+                                <span class="font-medium text-gray-200">${f.label}</span>
+                            </div>
+                            <div class="flex items-center">
+                                <span class="text-xs font-mono text-gray-400 ml-3 uppercase bg-black/30 px-2 py-1 rounded">${f.ext}</span>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-gray-400 group-hover:text-white"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+                            </div>
+                        </a>
+                    `;
+                });
+
+                resultBox.classList.remove('hidden');
+
+            } catch(err) {
+                errorText.textContent = err.message || 'حدث خطأ غير متوقع.';
+                errorBox.classList.remove('hidden');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                btnText.textContent = 'استخراج روابط التحميل';
+                btnSpinner.classList.add('hidden');
+            }
+        });
+    </script>
+</body>
+</html>

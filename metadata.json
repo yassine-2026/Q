@@ -1,0 +1,6 @@
+{
+  "name": "المُحمّل العالمي",
+  "description": "موقع لتحميل الفيديوهات من أكثر من 1800 منصة باستخدام yt-dlp",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
