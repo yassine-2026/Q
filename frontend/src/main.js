@@ -1,145 +1,123 @@
+// Modified to use Render backend https://bayhon.onrender.com
 const API_BASE = 'https://bayhon.onrender.com';
 
-document.addEventListener('DOMContentLoaded', () => {
-    const fetchBtn = document.getElementById('fetchBtn');
-    const videoUrlInput = document.getElementById('videoUrl');
-    const cookieFileInput = document.getElementById('cookieFile');
-    const loadingDiv = document.getElementById('loading');
-    const errorDiv = document.getElementById('error');
-    const resultDiv = document.getElementById('result');
-    const videoThumb = document.getElementById('videoThumb');
-    const videoTitle = document.getElementById('videoTitle');
-    const videoUploader = document.getElementById('videoUploader');
-    const formatsList = document.getElementById('formatsList');
+// عناصر الواجهة (تأكد من وجودها في index.html)
+const form = document.getElementById('download-form');
+const urlInput = document.getElementById('url-input');
+const resultDiv = document.getElementById('result');
+const errorDiv = document.getElementById('error');
 
-    fetchBtn.addEventListener('click', async () => {
-        const url = videoUrlInput.value.trim();
-        if (!url) {
-            showError('الرجاء إدخال رابط الفيديو.');
-            return;
-        }
+if (form) {
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
 
-        let cookiesText = '';
-        const cookieFile = cookieFileInput.files[0];
-        
-        if (cookieFile) {
-            try {
-                cookiesText = await cookieFile.text();
-            } catch (err) {
-                showError('تعذر قراءة ملف الكوكيز. تأكد من أنه ملف نصي صالح.');
-                return;
-            }
-        }
+    const url = urlInput.value.trim();
+    if (!url) {
+      showError('الرجاء إدخال رابط الفيديو');
+      return;
+    }
 
-        // Reset UI
-        hideError();
-        resultDiv.classList.add('hidden');
-        loadingDiv.classList.remove('hidden');
-        fetchBtn.disabled = true;
+    // إخفاء النتائج السابقة وإظهار حالة التحميل
+    resultDiv.innerHTML = 'جاري التحليل...';
+    errorDiv.textContent = '';
 
-        try {
-            const response = await fetch(`${API_BASE}/api/info`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ url, cookies: cookiesText })
-            });
+    // تجهيز FormData
+    const formData = new FormData();
+    formData.append('url', url);
 
-            let data;
-            try {
-                data = await response.json();
-            } catch (parseError) {
-                throw new Error('حدث خطأ في الخادم (استجابة غير صالحة). يرجى المحاولة لاحقاً.');
-            }
+    // إضافة ملف الكوكيز إذا اختاره المستخدم
+    const cookiesFile = document.getElementById('cookies-file')?.files[0];
+    if (cookiesFile) {
+      formData.append('cookies', cookiesFile);
+    }
 
-            if (!response.ok || !data.success) {
-                throw new Error(data.error || data.error_note || 'فشل استخراج الفيديو. يرجى التأكد من الرابط.');
-            }
+    try {
+      const response = await fetch(`${API_BASE}/api/info`, {
+        method: 'POST',
+        body: formData,
+      });
 
-            displayResult(data);
+      const data = await response.json();
 
-        } catch (error) {
-            showError(error.message);
-        } finally {
-            loadingDiv.classList.add('hidden');
-            fetchBtn.disabled = false;
-        }
+      if (data.success) {
+        displayInfo(data);
+      } else {
+        showError(data.error || 'فشل تحليل الرابط');
+      }
+    } catch (err) {
+      showError('حدث خطأ في الاتصال بالخادم. تأكد من اتصالك بالإنترنت.');
+    }
+  });
+}
+
+function displayInfo(info) {
+  let html = `
+    <h3>${info.title}</h3>
+    <img src="${info.thumbnail}" alt="صورة مصغرة" style="max-width:100%">
+    <p>المنصة: ${info.platform || 'غير معروف'}</p>
+    <h4>اختر الجودة:</h4>
+  `;
+
+  info.formats.forEach((format) => {
+    html += `
+      <button class="download-btn" data-format="${format.format_id}">
+        ${format.quality} (${format.ext}) - ${format.filesize ? format.filesize + ' بايت' : 'حجم غير معروف'}
+      </button><br>
+    `;
+  });
+
+  resultDiv.innerHTML = html;
+
+  // إضافة أحداث النقر على أزرار التحميل
+  document.querySelectorAll('.download-btn').forEach((btn) => {
+    btn.addEventListener('click', () => downloadVideo(info, btn.dataset.format));
+  });
+}
+
+async function downloadVideo(info, formatId) {
+  const formData = new FormData();
+  formData.append('url', urlInput.value.trim()); // نفس الرابط الأصلي
+  formData.append('format_id', formatId);
+
+  const cookiesFile = document.getElementById('cookies-file')?.files[0];
+  if (cookiesFile) {
+    formData.append('cookies', cookiesFile);
+  }
+
+  try {
+    const response = await fetch(`${API_BASE}/api/download`, {
+      method: 'POST',
+      body: formData,
     });
 
-    function showError(message) {
-        errorDiv.textContent = message;
-        errorDiv.classList.remove('hidden');
+    if (!response.ok) {
+      const errData = await response.json().catch(() => ({}));
+      showError(errData.error || 'فشل التحميل');
+      return;
     }
 
-    function hideError() {
-        errorDiv.textContent = '';
-        errorDiv.classList.add('hidden');
+    // استخراج اسم الملف من رأس Content-Disposition إن وجد
+    const disposition = response.headers.get('Content-Disposition');
+    let filename = 'video.mp4';
+    if (disposition && disposition.includes('filename=')) {
+      filename = disposition.split('filename=')[1].replace(/"/g, '');
     }
 
-    function displayResult(data) {
-        // Populate info
-        if (data.thumbnail) {
-            videoThumb.src = data.thumbnail;
-            videoThumb.classList.remove('hidden');
-        } else {
-            videoThumb.classList.add('hidden');
-        }
+    // تحميل الملف
+    const blob = await response.blob();
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(link.href);
+  } catch (err) {
+    showError('حدث خطأ أثناء التحميل');
+  }
+}
 
-        videoTitle.textContent = data.title || 'فيديو غير معروف';
-        videoUploader.textContent = data.uploader ? `الناشر: ${data.uploader}` : '';
-        
-        if (data.error_note) {
-            // If fallback was used, we might want to show a warning
-            const p = document.createElement('p');
-            p.textContent = data.error_note;
-            p.style.color = 'orange';
-            p.style.fontSize = '0.9rem';
-            p.style.marginTop = '0.5rem';
-            videoUploader.appendChild(p);
-        }
-
-        // Populate formats
-        formatsList.innerHTML = '';
-        
-        if (!data.formats || data.formats.length === 0) {
-            formatsList.innerHTML = '<p style="color:var(--text-muted);">لا توجد صيغ متاحة للتحميل المباشر.</p>';
-        } else {
-            data.formats.forEach(format => {
-                const formatItem = document.createElement('div');
-                formatItem.className = 'format-item';
-                
-                const detailsDiv = document.createElement('div');
-                detailsDiv.className = 'format-details';
-                
-                const qualitySpan = document.createElement('span');
-                qualitySpan.className = 'format-quality';
-                qualitySpan.textContent = format.label || format.quality;
-                
-                const typeSpan = document.createElement('span');
-                typeSpan.className = 'format-type';
-                typeSpan.textContent = `النوع: ${format.type} • الصيغة: ${format.ext}`;
-                
-                detailsDiv.appendChild(qualitySpan);
-                detailsDiv.appendChild(typeSpan);
-                
-                const downloadBtn = document.createElement('a');
-                downloadBtn.className = 'download-btn';
-                downloadBtn.href = format.url;
-                downloadBtn.target = '_blank';
-                downloadBtn.rel = 'noopener noreferrer';
-                downloadBtn.textContent = 'تحميل';
-                
-                // For direct file downloads, you can add download attribute
-                // downloadBtn.download = ''; 
-                
-                formatItem.appendChild(detailsDiv);
-                formatItem.appendChild(downloadBtn);
-                
-                formatsList.appendChild(formatItem);
-            });
-        }
-
-        resultDiv.classList.remove('hidden');
-    }
-});
+function showError(msg) {
+  errorDiv.textContent = msg;
+  resultDiv.innerHTML = '';
+}
